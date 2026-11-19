@@ -1,0 +1,6 @@
+{
+  "name": "synop-fill-e2e",
+  "private": true,
+  "description": "ทดสอบหน้าเว็บด้วย Chrome จริง (ไม่เกี่ยวกับระบบที่ใช้งาน)",
+  "devDependencies": { "puppeteer-core": "25.18.1" }
+}

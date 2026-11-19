@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# คอมไพล์ Tailwind (web/input.css -> web/app.css) ด้วย standalone CLI ไม่ต้องติดตั้ง Node
+# ผู้พัฒนาใช้เท่านั้น: ผลลัพธ์ web/app.css ถูก commit เข้า repo ผู้ใช้ปลายทางไม่ต้องมี Tailwind หรืออินเทอร์เน็ต
+# ใช้:  ./script/build-css          (ครั้งแรกจะดาวน์โหลด CLI ไปไว้ใน tools/)
+#       ./script/build-css --watch  (คอมไพล์ใหม่ทุกครั้งที่แก้)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+VERSION="3.4.17"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) ASSET="tailwindcss-windows-x64.exe"; BIN="tools/tailwindcss.exe" ;;
+  Darwin*) ASSET="tailwindcss-macos-$([ "$(uname -m)" = arm64 ] && echo arm64 || echo x64)"; BIN="tools/tailwindcss" ;;
+  *) ASSET="tailwindcss-linux-$([ "$(uname -m)" = aarch64 ] && echo arm64 || echo x64)"; BIN="tools/tailwindcss" ;;
+esac
+
+if [ ! -x "$BIN" ]; then
+  echo "ดาวน์โหลด Tailwind CLI v$VERSION ..."
+  mkdir -p tools
+  curl -fsSL -o "$BIN" "https://github.com/tailwindlabs/tailwindcss/releases/download/v$VERSION/$ASSET"
+  chmod +x "$BIN"
+fi
+
+"$BIN" -c tailwind.config.js -i web/input.css -o web/app.css --minify "$@"
+echo "สร้าง web/app.css แล้ว"

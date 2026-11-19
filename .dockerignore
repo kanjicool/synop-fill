@@ -1,0 +1,14 @@
+.git
+.venv
+.env
+.run
+logs
+tools
+tests
+docs
+script
+vendor
+__pycache__
+.pytest_cache
+node_modules
+*.md

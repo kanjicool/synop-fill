@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# สร้าง .venv และติดตั้งแพ็กเกจ (เรียกซ้ำได้ปลอดภัย)  ใช้:  ./script/setup        (ใช้งานจริง)
+#                                                           ./script/setup --dev  (รวมเครื่องมือทดสอบ pytest)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+pick_python() {
+  # ต้องเป็น Python 3.12 ขึ้นไป
+  for cand in python3.13 python3.12 python3 python "py -3.13" "py -3.12" "py -3"; do
+    # shellcheck disable=SC2086
+    if $cand -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1; then
+      echo "$cand"; return 0
+    fi
+  done
+  return 1
+}
+
+venv_python() {
+  if [ -x .venv/Scripts/python.exe ]; then echo ".venv/Scripts/python.exe"; else echo ".venv/bin/python"; fi
+}
+
+REQ="requirements.txt"; [ "${1:-}" = "--dev" ] && REQ="requirements-dev.txt"
+
+if [ ! -x .venv/Scripts/python.exe ] && [ ! -x .venv/bin/python ]; then
+  PY="$(pick_python)" || { echo "ไม่พบ Python 3.12 ขึ้นไป กรุณาติดตั้งจาก python.org แล้วลองใหม่" >&2; exit 1; }
+  echo "สร้าง .venv ด้วย: $PY"
+  # shellcheck disable=SC2086
+  $PY -m venv .venv
+fi
+
+VPY="$(venv_python)"
+PIP_ARGS=(-m pip install --disable-pip-version-check -r "$REQ")
+# เครื่องที่ไม่มีอินเทอร์เน็ต: วางไฟล์ .whl ไว้ใน vendor/wheels แล้วติดตั้งจากที่นั่น
+[ -d vendor/wheels ] && PIP_ARGS+=(--no-index --find-links vendor/wheels)
+"$VPY" "${PIP_ARGS[@]}"
+echo "พร้อมใช้งาน: ./script/run-app"

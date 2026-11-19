@@ -1,0 +1,12 @@
+.venv/
+.env
+.run/
+logs/
+tools/
+__pycache__/
+.pytest_cache/
+*.pyc
+node_modules/
+
+# ข้อมูลอ้างอิงจริง (ไฟล์รายงาน ภาพหน้าจอ ข้อมูลทดสอบ) ไม่เก็บใน repo
+docs/ref/

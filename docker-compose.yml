@@ -1,0 +1,20 @@
+# synop-fill (โหมดเสริม) ใช้ค่า SYNOP_PORT / SYNOP_BIND จากไฟล์ .env ชุดเดียวกับโหมด venv
+services:
+  synop-fill:
+    build: .
+    image: synop-fill:latest
+    container_name: synop-fill
+    restart: unless-stopped            # เปิดเครื่องใหม่แล้วขึ้นเอง (ต้องตั้งให้ Docker Desktop เริ่มตอนเข้า Windows)
+    ports:
+      # รูปแบบ  <ที่อยู่ที่ผูก>:<port บนเครื่องเรา>:<port ใน container>
+      - "${SYNOP_BIND:-127.0.0.1}:${SYNOP_PORT:-8765}:8000"
+    environment:
+      TZ: Asia/Bangkok
+    volumes:
+      - ./templates:/app/templates:ro  # เปลี่ยนไฟล์ต้นแบบได้โดยไม่ต้อง build ใหม่
+    healthcheck:
+      # ไม่ใช้ curl เพราะ image slim ไม่มี
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

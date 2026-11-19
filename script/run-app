@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# รันระบบแบบหน้าต่างเดียว เห็น log ตรง ๆ (Git Bash / Linux / macOS)  ใช้:  ./script/run-app
+# Windows ที่ต้องการให้ดับเบิลคลิก/รันเบื้องหลัง ให้ใช้ script\run-app.bat แทน
+# port และ bind อ่านจากไฟล์ .env (คัดลอกจาก .env.example)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+[ -f .env ] || { [ -f .env.example ] && cp .env.example .env; }
+PORT=8765; BIND=127.0.0.1
+if [ -f .env ]; then
+  while IFS='=' read -r key value; do
+    value="${value%%#*}"; value="$(echo "$value" | tr -d '[:space:]\r')"
+    case "$key" in SYNOP_PORT) PORT="$value" ;; SYNOP_BIND) BIND="$value" ;; esac
+  done < <(grep -E '^(SYNOP_PORT|SYNOP_BIND)=' .env || true)
+fi
+case "$PORT" in ''|*[!0-9]*) echo "ค่า SYNOP_PORT ในไฟล์ .env ไม่ถูกต้อง: $PORT" >&2; exit 1 ;; esac
+[[ "$BIND" =~ ^[0-9A-Fa-f:.]+$ ]] || { echo "ค่า SYNOP_BIND ในไฟล์ .env ไม่ถูกต้อง: $BIND" >&2; exit 1; }
+
+if [ ! -x .venv/Scripts/python.exe ] && [ ! -x .venv/bin/python ]; then ./script/setup; fi
+if [ -x .venv/Scripts/python.exe ]; then PY=.venv/Scripts/python.exe; else PY=.venv/bin/python; fi
+
+# ตรวจ port ก่อนเริ่ม: ถ้าเป็นระบบของเราเองอยู่แล้วแค่บอก ถ้าเป็นโปรแกรมอื่นให้แจ้งและหยุด
+status="$("$PY" - "$PORT" <<'EOF'
+import json, socket, sys, urllib.request
+port = int(sys.argv[1])
+s = socket.socket(); s.settimeout(0.5)
+try:
+    s.connect(("127.0.0.1", port))
+except OSError:
+    print("free"); raise SystemExit
+finally:
+    s.close()
+try:
+    data = json.load(urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2))
+    print("ours" if data.get("app") == "synop-fill" else "busy")
+except Exception:
+    print("busy")
+EOF
+)"
+case "$status" in
+  ours) echo "ระบบทำงานอยู่แล้วที่ http://localhost:$PORT/"; exit 0 ;;
+  busy) echo "พอร์ต $PORT ถูกโปรแกรมอื่นใช้งานอยู่ แก้เลข SYNOP_PORT ในไฟล์ .env แล้วลองใหม่" >&2; exit 1 ;;
+esac
+
+echo "เปิดระบบที่ http://localhost:$PORT/  (กด Ctrl+C เพื่อหยุด)"
+exec "$PY" -m uvicorn app.main:app --host "$BIND" --port "$PORT"

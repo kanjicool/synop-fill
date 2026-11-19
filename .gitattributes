@@ -1,0 +1,10 @@
+# สคริปต์ bash ต้องเป็น LF เสมอ (ถ้าเป็น CRLF จะรันใน Git Bash/Linux ไม่ได้)
+script/run-app text eol=lf
+script/setup text eol=lf
+script/build-css text eol=lf
+Dockerfile text eol=lf
+# ไฟล์ .bat ต้องเป็น CRLF
+*.bat text eol=crlf
+# ไฟล์ไบนารี
+*.xlsx binary
+*.jpg binary

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>synop-fill · กรอกรายงานผลการตรวจอากาศ</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232c7a4b'/%3E%3Cpath d='M9 21h14M9 16h14M9 11h14' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="font-sans">
+<div class="mx-auto grid max-w-[1180px] gap-4 px-4 pb-14 pt-5">
+  <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+    <div>
+      <h1 class="text-2xl font-bold leading-tight">ระบบกรอกรายงานผลการตรวจอากาศ</h1>
+      <p class="mt-0.5 text-[.95rem] text-muted">บริเวณภาคใต้ฝั่งตะวันออก · 21 สถานี</p>
+    </div>
+    <span id="demoTag" hidden class="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[.8rem] text-muted">โหมดตัวอย่าง · ข้อมูลสมมติ ห้ามใช้เป็นรายงานจริง</span>
+  </header>
+
+  <ol class="stepper" id="stepper">
+    <li data-s="1"><b>1</b><span>เริ่มต้น</span></li>
+    <li data-s="2"><b>2</b><span>กรอกข้อมูลทีละสถานี<small> แล้วตรวจใน Excel จำลอง</small></span></li>
+    <li data-s="3"><b>3</b><span>บันทึกไฟล์ Excel</span></li>
+  </ol>
+
+  <!-- ขั้น 1 -->
+  <section class="card" id="v-start" aria-labelledby="h-start">
+    <div class="grid max-w-[720px] justify-items-start gap-[18px]">
+      <h2 id="h-start" class="text-[1.15rem] font-semibold">เริ่มทำรายงานรอบใหม่</h2>
+      <ol class="grid list-decimal gap-1 pl-5">
+        <li>ระบบแสดงสถานีทีละแห่ง ตั้งแต่เพชรบุรีถึงนราธิวาส</li>
+        <li>เปิดหน้าข้อมูลของสถานีนั้นใน METNET แล้วกรอกรหัสข่าว อุณหภูมิ และค่าฝน</li>
+        <li>ครบแล้วดูผลใน Excel จำลอง แก้ได้ แล้วบันทึกไฟล์ ชื่อไฟล์ตั้งให้อัตโนมัติ</li>
+      </ol>
+      <div class="grid w-full max-w-[560px] gap-1">
+        <span class="lbl" id="tplLbl">ไฟล์ต้นแบบ</span>
+        <div class="flex flex-wrap items-center gap-2" aria-labelledby="tplLbl">
+          <input type="file" id="prevFile" accept=".xlsx" class="hidden">
+          <button type="button" class="btn" id="pickPrev">เลือกไฟล์รอบก่อน (.xlsx)</button>
+          <button type="button" class="link" id="clearPrev" hidden>ใช้ไฟล์เปล่าแทน</button>
+        </div>
+        <p class="hint" id="prevInfo">ไม่ได้เลือก ระบบจะใช้ไฟล์เปล่าที่มากับระบบ (เหมาะกับรอบแรกของวัน) รอบถัดไปเลือกไฟล์รอบก่อน เพื่อให้แสดงค่าฝนสะสมเดิมและเตือนเมื่อตัวเลขไม่ลงรอยกัน</p>
+        <div class="errbox" id="prevErr" hidden></div>
+      </div>
+      <div class="btns" style="margin-top:0">
+        <button class="btn primary big" id="startBtn" type="button">เริ่มต้นใช้งาน</button>
+        <button class="btn" id="demoBtn" type="button">ดูตัวอย่างที่กรอกไว้แล้ว (รอบ 13.00 น. 18 พ.ย. 2569)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ขั้น 2 -->
+  <section id="v-work" hidden>
+    <div class="subtabs" role="tablist" aria-label="มุมมอง">
+      <button type="button" role="tab" id="tabSt" aria-selected="true">กรอกทีละสถานี</button>
+      <button type="button" role="tab" id="tabXl" aria-selected="false">Excel จำลอง</button>
+    </div>
+
+    <div id="v-stations" class="stlayout">
+      <div class="card">
+        <div class="mb-1.5 flex flex-wrap items-end justify-between gap-x-5 gap-y-2">
+          <div>
+            <div class="text-[.85rem] text-muted" id="stNo"></div>
+            <h2 id="stName" class="text-[1.6rem] font-semibold leading-tight"></h2>
+            <div class="st-meta" id="stMeta"></div>
+          </div>
+          <div class="min-w-[180px] flex-[0_1_240px]"><div class="bar"><i id="barFill"></i></div><span class="text-[.8rem] text-muted" id="progTxt"></span></div>
+        </div>
+        <p class="hint">เปิดหน้าข้อมูลของสถานีนี้ใน METNET แล้วคัดลอกมาใส่ด้านล่าง ตรวจค่าไปพร้อมกันได้เลย ถ้าจำรหัสไม่ได้ ดูคำอธิบายทีละกลุ่มใต้ฟอร์ม</p>
+        <div class="mt-3.5">
+          <label class="lbl" for="raw">รหัสข่าว (กล่อง "รหัสข่าว" ในหน้า METNET ต้องมีบรรทัด AAXX ด้วย)</label>
+          <textarea id="raw" class="fld" spellcheck="false" placeholder="AAXX 18064&#10;48568 01460 81003 10271 20239 30119 ..."></textarea>
+          <div class="preview" id="preview" aria-live="polite"></div>
+        </div>
+        <div class="fields3">
+          <div><label class="lbl" for="fF">อุณหภูมิ (°C)</label><input type="text" inputmode="decimal" id="fF" class="fld" autocomplete="off"><p class="msg" id="mF"></p></div>
+          <div><label class="lbl" for="fG">ฝน 3 ชม. (มม.)</label><input type="text" inputmode="decimal" id="fG" class="fld" autocomplete="off"><p class="msg" id="mG"></p></div>
+          <div><label class="lbl" for="fH" id="lH">ฝนสะสมวันนี้ (มม.)</label><input type="text" inputmode="decimal" id="fH" class="fld" autocomplete="off"><p class="msg" id="mH"></p></div>
+        </div>
+        <p class="hint">ฝนน้อยกว่าที่วัดได้ให้พิมพ์ T · ไม่มีค่าหรือไม่ได้วัดให้พิมพ์ - · ทศนิยมใช้จุด</p>
+        <div class="btns">
+          <button class="btn" id="backBtn" type="button">ย้อนกลับ</button>
+          <button class="btn" id="skipBtn" type="button">ข้ามสถานีนี้</button>
+          <span class="spacer"></span>
+          <button class="btn primary" id="nextBtn" type="button">ถัดไป</button>
+        </div>
+      </div>
+      <aside class="card">
+        <h3 class="mb-2 text-[.95rem] font-semibold">ทุกสถานี (เรียงตามไฟล์)</h3>
+        <div class="chips21" id="chips21"></div>
+        <p class="mt-2.5 text-[.78rem] leading-7 text-muted"><span class="sw bg-accent-soft"></span>กรอกแล้ว <span class="sw" style="background:var(--gray-bg)"></span>ข้าม <span class="sw" style="box-shadow:inset 0 -3px 0 var(--warn-line)"></span>เตือน <span class="sw" style="box-shadow:inset 0 -3px 0 var(--err-line)"></span>ต้องแก้</p>
+        <div class="btns"><button class="btn" id="toXlSide" type="button">ข้ามไปดู Excel จำลอง</button></div>
+      </aside>
+      <section class="card col-span-full" id="exCard" aria-labelledby="h-ex">
+        <h2 id="h-ex" class="text-[1.05rem] font-semibold">อธิบายรหัสข่าวของสถานีนี้ทีละกลุ่ม</h2>
+        <p class="hint">เผื่อจำรหัสไม่ได้ กดเลขกลุ่มด้านล่างเพื่อเลื่อนไปดูคำอธิบาย <span class="badge use">ลงช่อง</span> คือค่าที่เขียนลงไฟล์ · <span class="badge chk">ใช้ตรวจ</span> ใช้เตือนเท่านั้น · <span class="badge skip">ไม่ลงตาราง</span> ไม่ใช้ในรายงานนี้</p>
+        <div id="exBody" class="mt-2.5"></div>
+        <details class="refdet">
+          <summary>ตารางแปลรหัส (ตามกระดาษที่ใช้อยู่)</summary>
+          <div class="refgrid" id="refBody"></div>
+        </details>
+      </section>
+    </div>
+
+    <div id="v-excel" class="card" hidden>
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
+        <div class="min-w-0 flex-[1_1_320px] text-[1.02rem] font-semibold" id="sum" aria-live="polite"></div>
+        <div class="flex flex-wrap gap-1.5" id="chips"></div>
+      </div>
+      <ul class="issues" id="issues" aria-label="รายการที่ควรตรวจ"></ul>
+      <div class="xlframe">
+        <div class="xlscroll">
+          <table class="xl" id="xl">
+            <colgroup><col style="width:34px"><col style="width:190px"><col style="width:200px"><col style="width:130px"><col style="width:160px"><col style="width:180px"><col style="width:100px"><col style="width:110px"><col style="width:130px"></colgroup>
+            <thead><tr><th class="rn"></th><th class="cl">A</th><th class="cl">B</th><th class="cl">C</th><th class="cl">D</th><th class="cl">E</th><th class="cl">F</th><th class="cl">G</th><th class="cl">H</th></tr></thead>
+            <tbody id="xlbody"></tbody>
+          </table>
+        </div>
+        <div class="sheettab"><span>Sheet1</span></div>
+      </div>
+      <div class="legend2">
+        <span><span class="sw" style="background:var(--err-bg);box-shadow:inset 0 0 0 2px var(--err-line)"></span>ต้องแก้ก่อนบันทึก</span>
+        <span><span class="sw" style="background:var(--warn-bg);box-shadow:inset 0 0 0 2px var(--warn-line)"></span>เตือน ตรวจแล้วบันทึกได้</span>
+        <span><span class="sw" style="background:var(--note-bg)"></span>แจ้งให้ทราบ</span>
+        <span><span class="sw" style="background:var(--gray-bg)"></span>ยังไม่มีข้อมูล</span>
+        <span>คลิกช่องในตารางเพื่อแก้ได้ทุกช่อง</span>
+      </div>
+      <div class="actions">
+        <button class="btn" id="xlBack" type="button">กลับไปกรอกสถานี</button>
+        <button class="btn primary" id="xlNext" type="button">ยืนยัน ไปบันทึกไฟล์</button>
+        <span class="why" id="xlWhy"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ขั้น 3 -->
+  <section class="card" id="v-save" hidden aria-labelledby="h-save">
+    <h2 id="h-save" class="text-[1.15rem] font-semibold">บันทึกไฟล์ Excel</h2>
+    <p class="hint mt-1.5">ตรวจวันและเวลาล่าสุดจากรหัสข่าวก่อน ระบบใช้ค่านี้ตั้งชื่อไฟล์และเขียนในหัวรายงาน</p>
+    <div class="mt-3.5 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-x-7 gap-y-[18px]">
+      <div>
+        <span class="lbl">วันและเวลาล่าสุดที่พบในรหัสข่าว</span>
+        <div class="bigdt" id="bigdt"></div>
+        <p class="hint" id="dtFrom"></p>
+        <div class="mt-3 max-w-[260px]">
+          <label class="lbl" for="sdate">วันที่ (แก้ได้ถ้าเดือนหรือปีไม่ตรง)</label>
+          <input type="date" id="sdate" class="fld">
+          <p class="hint">รหัสข่าวบอกแค่วันที่ในเดือน เดือนและปีมาจากวันนี้</p>
+        </div>
+        <div class="mt-3">
+          <span class="lbl" id="roundLbl">รอบ (เวลาไทย)</span>
+          <div class="seg" id="rounds" role="group" aria-labelledby="roundLbl"></div>
+        </div>
+      </div>
+      <div>
+        <label class="lbl" for="fname">ชื่อไฟล์</label>
+        <div class="flex items-center gap-2"><input type="text" id="fname" class="fld font-mono text-[.82rem]" spellcheck="false"><button class="link" id="fnameReset" type="button" hidden>คืนชื่ออัตโนมัติ</button></div>
+        <p class="hint">แก้ชื่อเองได้ ถ้าแก้แล้วระบบจะไม่เขียนทับ</p>
+        <div class="mt-4">
+          <span class="lbl">สรุป</span>
+          <div id="saveSum"></div>
+        </div>
+      </div>
+    </div>
+    <div class="errbox" id="saveErr" hidden></div>
+    <div class="actions">
+      <button class="btn" id="svBack" type="button">กลับไปตรวจใน Excel</button>
+      <button class="btn primary big" id="saveBtn" type="button">บันทึกไฟล์ Excel</button>
+      <span class="why" id="saveWhy"></span>
+    </div>
+    <div class="okbox" id="okbox" hidden>
+      <b>บันทึกแล้ว</b>
+      <p class="my-1 mb-2" id="okTxt"></p>
+      <button class="btn" id="newRound" type="button">เริ่มรอบใหม่</button>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
