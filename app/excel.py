@@ -95,7 +95,7 @@ def _read_title(z: zipfile.ZipFile) -> tuple[Optional[str], Optional[int], Optio
     except (ValueError, IndexError):
         date = None
     hour = int(m.group(4))
-    return text, (hour if hour in C.ROUNDS else None), date
+    return text, (hour if hour in C.HOURS else None), date
 
 
 def read_report(data: bytes) -> ReportInfo:
@@ -199,7 +199,7 @@ def build_workbook(
         row = info.rows[station.name]
         for col in COLUMNS:
             sheet = _set_cell(sheet, f"{col}{row}", col, row_values.get(col, ""))
-    is24 = hour == 7
+    is24 = hour == C.FIRST_ROUND_HOUR
     sheet = _set_cell(sheet, "H3", "H3", C.H_LABEL_24H if is24 else C.H_LABEL_TODAY)
     sheet = _set_cell(sheet, "B25", "B25", C.NOTE_24H if is24 else C.NOTE_TODAY)
     replaced = {SHEET: sheet.encode("utf-8")}

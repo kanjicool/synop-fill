@@ -207,3 +207,8 @@ def test_bad_header_is_a_problem():
 def test_empty_text_is_not_a_problem():
     p = parse_messages("   ")
     assert not p.problems and not p.messages
+
+
+def test_header_15_utc_is_22_00_thai_same_day():
+    m = parse_messages("AAXX 18154\n48568 32460 60504").messages[0]
+    assert (m.day, m.hour, m.utc) == (18, 22, 15)

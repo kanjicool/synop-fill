@@ -54,7 +54,7 @@ def test_config_lists_stations_options_and_reference():
     assert j["stations"][-1]["name"] == "นราธิวาส" and j["stations"][-1]["row"] == 24
     assert "n/a" in j["options"]["B"] and len(j["options"]["E"]) == 12
     assert {"dir", "spd", "sky", "ww"} <= set(j["reference"])
-    assert [r["h"] for r in j["rounds"]] == [7, 10, 13, 16]
+    assert j["utc_offset"] == 7
 
 
 def test_index_page_is_served_without_cache():

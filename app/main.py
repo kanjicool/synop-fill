@@ -46,7 +46,7 @@ def get_config() -> JSONResponse:
     return _no_cache(JSONResponse({
         "stations": [{"code": s.code, "name": s.name, "row": s.row} for s in C.STATIONS],
         "options": C.OPTIONS,
-        "rounds": [{"h": h, "utc": C.ROUND_UTC[h]} for h in C.ROUNDS],
+        "utc_offset": C.THAI_UTC_OFFSET,
         "reference": C.REFERENCE,
         "months": C.MONTHS_TH,
         "h_label_24h": C.H_LABEL_24H,

@@ -58,9 +58,10 @@ STATION_BY_NAME = {s.name: s for s in STATIONS}
 FIRST_ROW = STATIONS[0].row
 LAST_ROW = STATIONS[-1].row
 
-# รอบรายงาน (ชั่วโมงเวลาไทย) และ UTC ที่ตรงกัน
-ROUNDS: tuple[int, ...] = (7, 10, 13, 16)
-ROUND_UTC = {7: "00", 10: "03", 13: "06", 16: "09"}
+# เวลารายงานเลือกได้ทุกชั่วโมง (0-23 เวลาไทย) ผู้ใช้เลือกด้วย time picker
+# เวลา 07.00 น. คือรอบแรกของวัน (H = ฝน 24 ชม.) เวลาอื่น H = ฝนสะสมวันนี้
+HOURS: tuple[int, ...] = tuple(range(24))
+FIRST_ROUND_HOUR = 7
 THAI_UTC_OFFSET = 7
 
 # ตัวเลือกใน dropdown ของ Excel (ต้องตรงกับ data validation ในไฟล์ต้นแบบทุกตัวอักษร)

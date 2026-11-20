@@ -243,7 +243,10 @@
     $('#dtFrom').textContent = rep.latest
       ? 'ล่าสุดจากรหัสข่าว' + (rep.latest.count > 1 ? ' ' + rep.latest.count + ' สถานี' : 'ของ ' + rep.latest.from) + ' (' + rep.latest_text + ')'
       : 'ยังไม่มีรหัสข่าวที่บอกวัน/เวลา เลือกรอบเอง';
-    $('#rounds').innerHTML = cfg.rounds.map((r) => '<button type="button" data-h="' + r.h + '" aria-pressed="' + (r.h === rep.round) + '">' + pad(r.h) + '.00 น.<small>' + r.utc + ' UTC</small></button>').join('');
+    $('#stime').value = rep.round != null ? pad(rep.round) + ':00' : '';
+    $('#stimeHint').textContent = rep.round != null
+      ? 'ตรงกับ ' + pad((rep.round - cfg.utc_offset + 24) % 24) + '.00 UTC · เลือกชั่วโมง ระบบใช้เฉพาะชั่วโมง (นาทีเป็น 00 เสมอ)'
+      : 'เลือกชั่วโมง ระบบใช้เฉพาะชั่วโมง (นาทีเป็น 00 เสมอ)';
     if (!st.filenameEdited) $('#fname').value = rep.filename;
     $('#fnameReset').hidden = !st.filenameEdited;
     $('#saveSum').innerHTML = 'กรอกแล้ว ' + rep.filled + '/21 สถานี'
@@ -357,7 +360,10 @@
     $('#xlNext').addEventListener('click', async () => { go('save'); await renderSave(); });
     $('#svBack').addEventListener('click', async () => { go('work'); await showTab('xl'); });
     $('#sdate').addEventListener('change', async (e) => { if (!e.target.value) return; st.dateOverride = e.target.value; await renderSave(); });
-    $('#rounds').addEventListener('click', async (e) => { const b = e.target.closest('button'); if (!b) return; st.roundOverride = +b.dataset.h; await renderSave(); });
+    $('#stime').addEventListener('change', async (e) => {
+      const m = /^(\d{1,2}):/.exec(e.target.value); if (!m) return;
+      st.roundOverride = +m[1]; await renderSave();
+    });
     $('#fname').addEventListener('input', () => { st.filenameEdited = true; $('#fnameReset').hidden = false; });
     $('#fnameReset').addEventListener('click', async () => { st.filenameEdited = false; await renderSave(); });
     $('#saveBtn').addEventListener('click', saveFile);

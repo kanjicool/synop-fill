@@ -158,7 +158,7 @@ async function setVal(page, sel, text) {
   await page.click('#svBack'); await sleep(300);
   await page.click('#xlNext'); await page.waitForFunction(() => document.querySelector('#bigdt').textContent.includes('13.00'));
   await setVal(page, '#fname', 'ของฉัน.xlsx');
-  await page.click('#rounds button[data-h="16"]'); await sleep(600);
+  await page.$eval('#stime', (e) => { e.value = '16:00'; e.dispatchEvent(new Event('change', { bubbles: true })); }); await sleep(600);
   ok((await page.$eval('#fname', (e) => e.value)) === 'ของฉัน.xlsx', 'edited filename kept when round changes');
   ok(await page.$eval('#fnameReset', (e) => !e.hidden), 'reset-name link shown');
 

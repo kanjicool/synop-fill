@@ -148,8 +148,9 @@
           <p class="hint">รหัสข่าวบอกแค่วันที่ในเดือน เดือนและปีมาจากวันนี้</p>
         </div>
         <div class="mt-3">
-          <span class="lbl" id="roundLbl">รอบ (เวลาไทย)</span>
-          <div class="seg" id="rounds" role="group" aria-labelledby="roundLbl"></div>
+          <label class="lbl" for="stime">เวลา (เวลาไทย)</label>
+          <input type="time" id="stime" class="fld" step="3600">
+          <p class="hint" id="stimeHint">เลือกชั่วโมง ระบบใช้เฉพาะชั่วโมง (นาทีเป็น 00 เสมอ)</p>
         </div>
       </div>
       <div>

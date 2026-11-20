@@ -204,3 +204,19 @@ def test_rows_must_be_all_stations_in_order():
 
     with pytest.raises(ValidationError):
         CheckIn(rows=[RowIn(code="48465")], ref=RefDate(y=2026, m=11, d=18))
+
+
+def test_round_22_is_supported_and_uses_the_16_file():
+    rep = check_prev({"48560": dict(G="7.5", H="36.2")}, round_prev=16, hour=22)
+    assert rep["round"] == 22 and rep["prev_list"] is not None
+    assert rep["filename"] == "รายงานผลการตรวจอากาศเวลา 22.00 น. 18-11-69.xlsx"
+    assert rep["title_text"] == "วันที่ 18 พฤศจิกายน 2569 เวลา 22.00 น."
+    wrong = check_prev({"48560": dict(G="7.5", H="36.2")}, round_prev=22, hour=22)
+    assert wrong["prev_list"] is None and wrong["prev_note"]
+    skip = check_prev({"48560": dict(G="7.5", H="36.2")}, round_prev=13, hour=22)  # ข้ามรอบได้ ขอแค่เป็นรอบก่อนหน้า
+    assert skip["prev_list"] is not None
+
+
+def test_any_hour_is_accepted_as_round():
+    assert check_prev({"48568": {}}, round_prev=7, hour=1)["round"] == 1
+    assert check_prev({"48568": {}}, round_prev=7, hour=19)["round"] == 19

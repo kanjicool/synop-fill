@@ -12,17 +12,20 @@ from .filename import header_text, make_filename, parse_iso
 from .schemas import CheckIn, RowIn
 from .validator import Context, compute_flags, time_label
 
-# (รอบของไฟล์รอบก่อน, รอบปัจจุบัน) ที่ใช้ตรวจ H เดิม + G ได้
-PREV_PAIRS = {(10, 13), (13, 16)}
 COL_LABEL = {"S": "สถานี", "B": "ทิศลม", "C": "กำลังลม", "D": "ท้องฟ้า", "E": "ลักษณะอากาศ", "F": "อุณหภูมิ", "G": "ฝน 3 ชม."}
 
 
+def prev_usable(prev_round: Optional[int], round_: Optional[int]) -> bool:
+    """ไฟล์รอบก่อนใช้ตรวจ H เดิม + G ได้เมื่อเป็นรอบ "ฝนสะสมวันนี้" (ไม่ใช่ 07.00 ซึ่ง H เป็นฝน 24 ชม.) และเวลาน้อยกว่ารอบปัจจุบัน"""
+    return prev_round is not None and round_ is not None and C.FIRST_ROUND_HOUR < prev_round < round_
+
+
 def h_label(round_: Optional[int]) -> str:
-    return C.H_LABEL_24H if round_ == 7 else C.H_LABEL_TODAY
+    return C.H_LABEL_24H if round_ == C.FIRST_ROUND_HOUR else C.H_LABEL_TODAY
 
 
 def footnote(round_: Optional[int]) -> str:
-    return C.NOTE_24H if round_ == 7 else C.NOTE_TODAY
+    return C.NOTE_24H if round_ == C.FIRST_ROUND_HOUR else C.NOTE_TODAY
 
 
 def _latest(rows: list[RowIn]) -> Optional[tuple[int, int, str, int]]:
@@ -73,19 +76,18 @@ def build_report(data: CheckIn) -> dict:
     rows = data.rows
     latest = _latest(rows)
     day = _date(latest, data)
-    round_auto = latest[1] if latest and latest[1] in C.ROUNDS else None
-    round_ = data.round_override if data.round_override in C.ROUNDS else round_auto
+    round_auto = latest[1] if latest and latest[1] in C.HOURS else None
+    round_ = data.round_override if data.round_override in C.HOURS else round_auto
 
     prev_list: Optional[list[str]] = None
     prev_note: Optional[str] = None
     if data.prev and len(data.prev.h) == len(rows):
         prev_day = parse_iso(data.prev.date)
-        if data.prev.round is not None and round_ is not None and (data.prev.round, round_) in PREV_PAIRS \
-                and (prev_day is None or prev_day == day):
+        if prev_usable(data.prev.round, round_) and (prev_day is None or prev_day == day):
             prev_list = data.prev.h
-        elif round_ in (13, 16):
+        elif round_ is not None and round_ > 10:
             prev_note = (
-                f"ไฟล์ต้นแบบที่เลือกไม่ใช่รอบก่อนหน้าของรอบ {round_:02d}.00 น. ของวันเดียวกัน "
+                f"ไฟล์ต้นแบบที่เลือกไม่ใช่รอบก่อนหน้า (หลัง 07.00 น. และก่อน {round_:02d}.00 น.) ของวันเดียวกัน "
                 "จึงข้ามการตรวจฝนสะสม"
             )
 
